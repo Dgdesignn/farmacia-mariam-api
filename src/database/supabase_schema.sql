@@ -55,6 +55,9 @@ CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
 -- ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 
+-- Adicionar campo password na tabela customers se não existir
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS password VARCHAR(255);
+
 -- Função para atualizar updated_at automaticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$

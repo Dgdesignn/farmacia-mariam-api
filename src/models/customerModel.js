@@ -7,7 +7,7 @@ class CustomerModel {
     
     let query = supabase
       .from('customers')
-      .select('*')
+      .select('id, name, email, phone, cpf, address, birth_date, active, created_at, updated_at')
       .eq('active', true);
 
     if (search) {
@@ -48,7 +48,7 @@ class CustomerModel {
   static async findById(id) {
     const { data, error } = await supabase
       .from('customers')
-      .select('*')
+      .select('id, name, email, phone, cpf, address, birth_date, active, created_at, updated_at')
       .eq('id', id)
       .single();
 

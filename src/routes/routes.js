@@ -3,12 +3,161 @@ const express = require('express');
 const ProductController = require('../controllers/productControllers');
 const CategoryController = require('../controllers/categoryController');
 const CustomerController = require('../controllers/customerController');
+const AuthController = require('../controllers/authController');
 
 const { productValidationRules, productUpdateValidationRules } = require('../validators/productValidator');
 const { categoryValidationRules, categoryUpdateValidationRules } = require('../validators/categoryValidator');
 const { customerValidationRules, customerUpdateValidationRules } = require('../validators/customerValidator');
+const { loginValidationRules, registerValidationRules, changePasswordValidationRules, resetPasswordValidationRules } = require('../validators/authValidator');
+
+const { authenticateToken, optionalAuth } = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+// Auth routes
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login do cliente
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       200:
+ *         description: Login realizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       401:
+ *         description: Credenciais inválidas
+ */
+router.post('/auth/login', loginValidationRules(), AuthController.login);
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Cadastro de novo cliente
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterRequest'
+ *     responses:
+ *       201:
+ *         description: Cadastro realizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       400:
+ *         description: Dados inválidos
+ */
+router.post('/auth/register', registerValidationRules(), AuthController.register);
+
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   get:
+ *     summary: Obter perfil do cliente logado
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Perfil do cliente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 customer:
+ *                   $ref: '#/components/schemas/Customer'
+ *       401:
+ *         description: Token inválido
+ */
+router.get('/auth/profile', authenticateToken, AuthController.profile);
+
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   put:
+ *     summary: Alterar senha do cliente
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - oldPassword
+ *               - newPassword
+ *             properties:
+ *               oldPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Senha alterada com sucesso
+ *       400:
+ *         description: Senha atual inválida
+ *       401:
+ *         description: Token inválido
+ */
+router.put('/auth/change-password', authenticateToken, changePasswordValidationRules(), AuthController.changePassword);
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Resetar senha do cliente
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Nova senha enviada por email
+ *       400:
+ *         description: Email não encontrado
+ */
+router.post('/auth/reset-password', resetPasswordValidationRules(), AuthController.resetPassword);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout do cliente
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout realizado com sucesso
+ *       401:
+ *         description: Token inválido
+ */
+router.post('/auth/logout', authenticateToken, AuthController.logout);
 
 /**
  * @swagger
@@ -97,6 +246,60 @@ const router = express.Router();
  *         active:
  *           type: boolean
  *           description: Status ativo/inativo
+ *     LoginRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *         - password
+ *       properties:
+ *         email:
+ *           type: string
+ *           description: Email do cliente
+ *         password:
+ *           type: string
+ *           description: Senha do cliente
+ *     RegisterRequest:
+ *       type: object
+ *       required:
+ *         - name
+ *         - email
+ *         - password
+ *       properties:
+ *         name:
+ *           type: string
+ *           description: Nome do cliente
+ *         email:
+ *           type: string
+ *           description: Email do cliente
+ *         password:
+ *           type: string
+ *           description: Senha do cliente
+ *         phone:
+ *           type: string
+ *           description: Telefone do cliente
+ *         cpf:
+ *           type: string
+ *           description: CPF do cliente
+ *         address:
+ *           type: string
+ *           description: Endereço do cliente
+ *         birth_date:
+ *           type: string
+ *           format: date
+ *           description: Data de nascimento
+ *     AuthResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *         customer:
+ *           $ref: '#/components/schemas/Customer'
+ *         token:
+ *           type: string
+ *           description: JWT token
+ *         expiresIn:
+ *           type: string
+ *           description: Tempo de expiração do token
  */
 
 // Product routes

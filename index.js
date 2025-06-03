@@ -1,15 +1,11 @@
-
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const session = require('express-session');
-const winston = require('winston');
-const swaggerJSDoc = require('swagger-jsdoc');
-const swaggerUi = require('swagger-ui-express');
-require('dotenv').config();
-
 const routes = require('./src/routes/routes');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -57,16 +53,25 @@ const swaggerOptions = {
     info: {
       title: 'Farmácia Mariam API',
       version: '1.0.0',
-      description: 'API para gerenciamento da Farmácia Mariam'
+      description: 'API para gerenciamento de farmácia',
     },
     servers: [
       {
         url: `http://localhost:${PORT}`,
-        description: 'Servidor de desenvolvimento'
-      }
-    ]
+        description: 'Servidor de desenvolvimento',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
   },
-  apis: ['./src/routes/*.js']
+  apis: ['./src/routes/*.js'],
 };
 
 const specs = swaggerJSDoc(swaggerOptions);
