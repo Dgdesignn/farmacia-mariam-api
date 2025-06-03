@@ -1,105 +1,109 @@
 
-const { query } = require('../config/config');
+const { supabase } = require('../config/config');
 
 class CategoryModel {
   static async findAll() {
-    const result = await query(`
-      SELECT 
-        c.*,
-        COUNT(p.id) as products_count
-      FROM categories c
-      LEFT JOIN products p ON c.id = p.category_id AND p.active = true
-      WHERE c.active = true
-      GROUP BY c.id
-      ORDER BY c.name ASC
-    `);
+    const { data, error } = await supabase
+      .from('categories')
+      .select(`
+        *,
+        products!inner(id)
+      `)
+      .eq('active', true)
+      .order('name', { ascending: true });
 
-    return result.rows.map(row => ({
-      ...row,
-      _count: { products: parseInt(row.products_count) }
+    if (error) throw new Error(error.message);
+
+    return data.map(category => ({
+      ...category,
+      _count: { products: category.products ? category.products.length : 0 }
     }));
   }
 
   static async findById(id) {
-    const categoryResult = await query(`
-      SELECT * FROM categories WHERE id = $1
-    `, [id]);
+    const { data: category, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (categoryResult.rows.length === 0) return null;
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw new Error(error.message);
+    }
 
-    const productsResult = await query(`
-      SELECT * FROM products WHERE category_id = $1 AND active = true
-    `, [id]);
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('category_id', id)
+      .eq('active', true);
 
-    const countResult = await query(`
-      SELECT COUNT(*) as total FROM products WHERE category_id = $1 AND active = true
-    `, [id]);
+    if (productsError) throw new Error(productsError.message);
 
     return {
-      ...categoryResult.rows[0],
-      products: productsResult.rows,
-      _count: { products: parseInt(countResult.rows[0].total) }
+      ...category,
+      products: products || [],
+      _count: { products: products ? products.length : 0 }
     };
   }
 
   static async create(data) {
-    const { name, description } = data;
-    
-    const result = await query(`
-      INSERT INTO categories (name, description)
-      VALUES ($1, $2)
-      RETURNING *
-    `, [name, description]);
+    const { data: category, error } = await supabase
+      .from('categories')
+      .insert([{
+        name: data.name,
+        description: data.description
+      }])
+      .select()
+      .single();
 
-    return result.rows[0];
+    if (error) throw new Error(error.message);
+    return category;
   }
 
   static async update(id, data) {
-    const fields = [];
-    const values = [];
-    let paramCount = 0;
+    const updateData = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.description !== undefined) updateData.description = data.description;
+    updateData.updated_at = new Date().toISOString();
 
-    Object.keys(data).forEach(key => {
-      if (data[key] !== undefined) {
-        paramCount++;
-        fields.push(`${key} = $${paramCount}`);
-        values.push(data[key]);
-      }
-    });
+    const { data: category, error } = await supabase
+      .from('categories')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
 
-    if (fields.length === 0) return null;
-
-    paramCount++;
-    fields.push(`updated_at = $${paramCount}`);
-    values.push(new Date());
-
-    values.push(id);
-
-    await query(`
-      UPDATE categories 
-      SET ${fields.join(', ')}
-      WHERE id = $${paramCount + 1}
-    `, values);
-
+    if (error) throw new Error(error.message);
     return await this.findById(id);
   }
 
   static async delete(id) {
-    await query(`
-      UPDATE categories 
-      SET active = false, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-    `, [id]);
+    const { error } = await supabase
+      .from('categories')
+      .update({ 
+        active: false, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', id);
 
+    if (error) throw new Error(error.message);
     return { id, active: false };
   }
 
   static async findByName(name) {
-    const result = await query(`
-      SELECT * FROM categories WHERE name = $1
-    `, [name]);
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('name', name)
+      .eq('active', true)
+      .single();
 
-    return result.rows.length > 0 ? result.rows[0] : null;
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw new Error(error.message);
+    }
+    return data;
   }
 }
 

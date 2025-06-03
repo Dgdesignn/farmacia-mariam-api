@@ -1,167 +1,179 @@
 
-const { query } = require('../config/config');
+const { supabase } = require('../config/config');
 
 class ProductModel {
   static async findAll(page = 1, limit = 10, categoryId = null, search = null) {
     const offset = (page - 1) * limit;
-    let whereClause = 'WHERE p.active = true';
-    let params = [];
-    let paramCount = 0;
+    
+    let query = supabase
+      .from('products')
+      .select(`
+        *,
+        categories!inner(
+          id,
+          name,
+          description
+        )
+      `)
+      .eq('active', true);
 
     if (categoryId) {
-      paramCount++;
-      whereClause += ` AND p.category_id = $${paramCount}`;
-      params.push(categoryId);
+      query = query.eq('category_id', categoryId);
     }
 
     if (search) {
-      paramCount++;
-      whereClause += ` AND (p.name ILIKE $${paramCount} OR p.description ILIKE $${paramCount} OR p.barcode ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,barcode.ilike.%${search}%`);
     }
 
-    const productsQuery = `
-      SELECT 
-        p.*,
-        c.name as category_name,
-        c.description as category_description
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      ${whereClause}
-      ORDER BY p.created_at DESC
-      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
-    `;
-    params.push(limit, offset);
+    // Buscar dados paginados
+    const { data: products, error } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
-    const countQuery = `
-      SELECT COUNT(*) as total
-      FROM products p
-      ${whereClause}
-    `;
+    if (error) throw new Error(error.message);
 
-    const [productsResult, countResult] = await Promise.all([
-      query(productsQuery, params),
-      query(countQuery, params.slice(0, -2))
-    ]);
+    // Buscar total para paginação
+    let countQuery = supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('active', true);
 
-    const products = productsResult.rows.map(row => ({
-      ...row,
-      category: row.category_name ? {
-        id: row.category_id,
-        name: row.category_name,
-        description: row.category_description
+    if (categoryId) {
+      countQuery = countQuery.eq('category_id', categoryId);
+    }
+
+    if (search) {
+      countQuery = countQuery.or(`name.ilike.%${search}%,description.ilike.%${search}%,barcode.ilike.%${search}%`);
+    }
+
+    const { count, error: countError } = await countQuery;
+    if (countError) throw new Error(countError.message);
+
+    const formattedProducts = products.map(product => ({
+      ...product,
+      category: product.categories ? {
+        id: product.categories.id,
+        name: product.categories.name,
+        description: product.categories.description
       } : null
     }));
 
-    const total = parseInt(countResult.rows[0].total);
-
     return {
-      products,
+      products: formattedProducts,
       pagination: {
         page,
         limit,
-        total,
-        pages: Math.ceil(total / limit)
+        total: count || 0,
+        pages: Math.ceil((count || 0) / limit)
       }
     };
   }
 
   static async findById(id) {
-    const result = await query(`
-      SELECT 
-        p.*,
-        c.name as category_name,
-        c.description as category_description
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.id = $1
-    `, [id]);
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        categories(
+          id,
+          name,
+          description
+        )
+      `)
+      .eq('id', id)
+      .single();
 
-    if (result.rows.length === 0) return null;
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw new Error(error.message);
+    }
 
-    const row = result.rows[0];
     return {
-      ...row,
-      category: row.category_name ? {
-        id: row.category_id,
-        name: row.category_name,
-        description: row.category_description
+      ...data,
+      category: data.categories ? {
+        id: data.categories.id,
+        name: data.categories.name,
+        description: data.categories.description
       } : null
     };
   }
 
   static async create(data) {
-    const { name, description, price, stock, barcode, category_id } = data;
-    
-    const result = await query(`
-      INSERT INTO products (name, description, price, stock, barcode, category_id)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
-    `, [name, description, price, stock || 0, barcode, category_id]);
+    const { data: product, error } = await supabase
+      .from('products')
+      .insert([{
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        stock: data.stock || 0,
+        barcode: data.barcode,
+        category_id: data.category_id
+      }])
+      .select()
+      .single();
 
-    return await this.findById(result.rows[0].id);
+    if (error) throw new Error(error.message);
+    return await this.findById(product.id);
   }
 
   static async update(id, data) {
-    const fields = [];
-    const values = [];
-    let paramCount = 0;
+    const updateData = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.price !== undefined) updateData.price = data.price;
+    if (data.stock !== undefined) updateData.stock = data.stock;
+    if (data.barcode !== undefined) updateData.barcode = data.barcode;
+    if (data.category_id !== undefined) updateData.category_id = data.category_id;
+    updateData.updated_at = new Date().toISOString();
 
-    Object.keys(data).forEach(key => {
-      if (data[key] !== undefined) {
-        paramCount++;
-        fields.push(`${key} = $${paramCount}`);
-        values.push(data[key]);
-      }
-    });
+    const { error } = await supabase
+      .from('products')
+      .update(updateData)
+      .eq('id', id);
 
-    if (fields.length === 0) return null;
-
-    paramCount++;
-    fields.push(`updated_at = $${paramCount}`);
-    values.push(new Date());
-
-    values.push(id);
-
-    await query(`
-      UPDATE products 
-      SET ${fields.join(', ')}
-      WHERE id = $${paramCount + 1}
-    `, values);
-
+    if (error) throw new Error(error.message);
     return await this.findById(id);
   }
 
   static async delete(id) {
-    await query(`
-      UPDATE products 
-      SET active = false, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-    `, [id]);
+    const { error } = await supabase
+      .from('products')
+      .update({ 
+        active: false, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', id);
 
+    if (error) throw new Error(error.message);
     return { id, active: false };
   }
 
   static async findByBarcode(barcode) {
-    const result = await query(`
-      SELECT 
-        p.*,
-        c.name as category_name,
-        c.description as category_description
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.barcode = $1
-    `, [barcode]);
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        categories(
+          id,
+          name,
+          description
+        )
+      `)
+      .eq('barcode', barcode)
+      .eq('active', true)
+      .single();
 
-    if (result.rows.length === 0) return null;
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw new Error(error.message);
+    }
 
-    const row = result.rows[0];
     return {
-      ...row,
-      category: row.category_name ? {
-        id: row.category_id,
-        name: row.category_name,
-        description: row.category_description
+      ...data,
+      category: data.categories ? {
+        id: data.categories.id,
+        name: data.categories.name,
+        description: data.categories.description
       } : null
     };
   }

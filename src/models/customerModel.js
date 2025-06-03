@@ -1,124 +1,142 @@
 
-const { query } = require('../config/config');
+const { supabase } = require('../config/config');
 
 class CustomerModel {
   static async findAll(page = 1, limit = 10, search = null) {
     const offset = (page - 1) * limit;
-    let whereClause = 'WHERE active = true';
-    let params = [];
-    let paramCount = 0;
+    
+    let query = supabase
+      .from('customers')
+      .select('*')
+      .eq('active', true);
 
     if (search) {
-      paramCount++;
-      whereClause += ` AND (name ILIKE $${paramCount} OR email ILIKE $${paramCount} OR phone ILIKE $${paramCount} OR cpf ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
+      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,cpf.ilike.%${search}%`);
     }
 
-    const customersQuery = `
-      SELECT * FROM customers
-      ${whereClause}
-      ORDER BY name ASC
-      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
-    `;
-    params.push(limit, offset);
+    // Buscar dados paginados
+    const { data: customers, error } = await query
+      .order('name', { ascending: true })
+      .range(offset, offset + limit - 1);
 
-    const countQuery = `
-      SELECT COUNT(*) as total FROM customers
-      ${whereClause}
-    `;
+    if (error) throw new Error(error.message);
 
-    const [customersResult, countResult] = await Promise.all([
-      query(customersQuery, params),
-      query(countQuery, params.slice(0, -2))
-    ]);
+    // Buscar total para paginação
+    let countQuery = supabase
+      .from('customers')
+      .select('id', { count: 'exact', head: true })
+      .eq('active', true);
 
-    const total = parseInt(countResult.rows[0].total);
+    if (search) {
+      countQuery = countQuery.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,cpf.ilike.%${search}%`);
+    }
+
+    const { count, error: countError } = await countQuery;
+    if (countError) throw new Error(countError.message);
 
     return {
-      customers: customersResult.rows,
+      customers,
       pagination: {
         page,
         limit,
-        total,
-        pages: Math.ceil(total / limit)
+        total: count || 0,
+        pages: Math.ceil((count || 0) / limit)
       }
     };
   }
 
   static async findById(id) {
-    const result = await query(`
-      SELECT * FROM customers WHERE id = $1
-    `, [id]);
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    return result.rows.length > 0 ? result.rows[0] : null;
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw new Error(error.message);
+    }
+    return data;
   }
 
   static async create(data) {
-    const { name, email, phone, cpf, address, birth_date } = data;
-    
-    const result = await query(`
-      INSERT INTO customers (name, email, phone, cpf, address, birth_date)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
-    `, [name, email, phone, cpf, address, birth_date]);
+    const { data: customer, error } = await supabase
+      .from('customers')
+      .insert([{
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        cpf: data.cpf,
+        address: data.address,
+        birth_date: data.birth_date
+      }])
+      .select()
+      .single();
 
-    return result.rows[0];
+    if (error) throw new Error(error.message);
+    return customer;
   }
 
   static async update(id, data) {
-    const fields = [];
-    const values = [];
-    let paramCount = 0;
+    const updateData = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.cpf !== undefined) updateData.cpf = data.cpf;
+    if (data.address !== undefined) updateData.address = data.address;
+    if (data.birth_date !== undefined) updateData.birth_date = data.birth_date;
+    updateData.updated_at = new Date().toISOString();
 
-    Object.keys(data).forEach(key => {
-      if (data[key] !== undefined) {
-        paramCount++;
-        fields.push(`${key} = $${paramCount}`);
-        values.push(data[key]);
-      }
-    });
+    const { error } = await supabase
+      .from('customers')
+      .update(updateData)
+      .eq('id', id);
 
-    if (fields.length === 0) return null;
-
-    paramCount++;
-    fields.push(`updated_at = $${paramCount}`);
-    values.push(new Date());
-
-    values.push(id);
-
-    await query(`
-      UPDATE customers 
-      SET ${fields.join(', ')}
-      WHERE id = $${paramCount + 1}
-    `, values);
-
+    if (error) throw new Error(error.message);
     return await this.findById(id);
   }
 
   static async delete(id) {
-    await query(`
-      UPDATE customers 
-      SET active = false, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-    `, [id]);
+    const { error } = await supabase
+      .from('customers')
+      .update({ 
+        active: false, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', id);
 
+    if (error) throw new Error(error.message);
     return { id, active: false };
   }
 
   static async findByEmail(email) {
-    const result = await query(`
-      SELECT * FROM customers WHERE email = $1
-    `, [email]);
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .eq('active', true)
+      .single();
 
-    return result.rows.length > 0 ? result.rows[0] : null;
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw new Error(error.message);
+    }
+    return data;
   }
 
   static async findByCpf(cpf) {
-    const result = await query(`
-      SELECT * FROM customers WHERE cpf = $1
-    `, [cpf]);
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('cpf', cpf)
+      .eq('active', true)
+      .single();
 
-    return result.rows.length > 0 ? result.rows[0] : null;
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw new Error(error.message);
+    }
+    return data;
   }
 }
 
