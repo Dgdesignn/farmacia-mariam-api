@@ -1,6 +1,6 @@
 
 import ProductModel from '../models/productModel.js';
-const CategoryModel = require('../models/categoryModel');
+import CategoryModel from '../models/categoryModel.js';
 
 class ProductService {
   static async getAllProducts(page, limit, categoryId, search) {
