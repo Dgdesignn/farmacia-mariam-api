@@ -1,16 +1,16 @@
 
-const express = require('express');
-const ProductController = require('../controllers/productControllers');
-const CategoryController = require('../controllers/categoryController');
-const CustomerController = require('../controllers/customerController');
-const AuthController = require('../controllers/authController');
+import express from 'express';
+import ProductController from '../controllers/productControllers.js';
+import CategoryController from '../controllers/categoryController.js';
+import CustomerController from '../controllers/customerController.js';
+import AuthController from '../controllers/authController.js';
 
-const { productValidationRules, productUpdateValidationRules } = require('../validators/productValidator');
-const { categoryValidationRules, categoryUpdateValidationRules } = require('../validators/categoryValidator');
-const { customerValidationRules, customerUpdateValidationRules } = require('../validators/customerValidator');
-const { loginValidationRules, registerValidationRules, changePasswordValidationRules, resetPasswordValidationRules } = require('../validators/authValidator');
+import { productValidationRules, productUpdateValidationRules } from '../validators/productValidator.js';
+import { categoryValidationRules, categoryUpdateValidationRules } from '../validators/categoryValidator.js';
+import { customerValidationRules, customerUpdateValidationRules } from '../validators/customerValidator.js';
+import { loginValidationRules, registerValidationRules, changePasswordValidationRules, resetPasswordValidationRules } from '../validators/authValidator.js';
 
-const { authenticateToken, optionalAuth } = require('../middleware/authMiddleware');
+import { authenticateToken, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -65,29 +65,6 @@ router.post('/auth/register', registerValidationRules(), AuthController.register
 
 /**
  * @swagger
- * /api/auth/profile:
- *   get:
- *     summary: Obter perfil do cliente logado
- *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Perfil do cliente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 customer:
- *                   $ref: '#/components/schemas/Customer'
- *       401:
- *         description: Token inválido
- */
-router.get('/auth/profile', authenticateToken, AuthController.profile);
-
-/**
- * @swagger
  * /api/auth/change-password:
  *   put:
  *     summary: Alterar senha do cliente
@@ -99,20 +76,12 @@ router.get('/auth/profile', authenticateToken, AuthController.profile);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - oldPassword
- *               - newPassword
- *             properties:
- *               oldPassword:
- *                 type: string
- *               newPassword:
- *                 type: string
+ *             $ref: '#/components/schemas/ChangePasswordRequest'
  *     responses:
  *       200:
  *         description: Senha alterada com sucesso
  *       400:
- *         description: Senha atual inválida
+ *         description: Dados inválidos
  *       401:
  *         description: Token inválido
  */
@@ -129,12 +98,7 @@ router.put('/auth/change-password', authenticateToken, changePasswordValidationR
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - email
- *             properties:
- *               email:
- *                 type: string
+ *             $ref: '#/components/schemas/ResetPasswordRequest'
  *     responses:
  *       200:
  *         description: Nova senha enviada por email
@@ -143,21 +107,403 @@ router.put('/auth/change-password', authenticateToken, changePasswordValidationR
  */
 router.post('/auth/reset-password', resetPasswordValidationRules(), AuthController.resetPassword);
 
+// Product routes
 /**
  * @swagger
- * /api/auth/logout:
- *   post:
- *     summary: Logout do cliente
- *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
+ * /api/products:
+ *   get:
+ *     summary: Listar produtos
+ *     tags: [Products]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Itens por página
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Termo de busca
  *     responses:
  *       200:
- *         description: Logout realizado com sucesso
- *       401:
- *         description: Token inválido
+ *         description: Lista de produtos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Product'
  */
-router.post('/auth/logout', authenticateToken, AuthController.logout);
+router.get('/products', optionalAuth, ProductController.getAllProducts);
+
+/**
+ * @swagger
+ * /api/products/{id}:
+ *   get:
+ *     summary: Buscar produto por ID
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do produto
+ *     responses:
+ *       200:
+ *         description: Produto encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Product'
+ *       404:
+ *         description: Produto não encontrado
+ */
+router.get('/products/:id', optionalAuth, ProductController.getProductById);
+
+/**
+ * @swagger
+ * /api/products:
+ *   post:
+ *     summary: Criar produto
+ *     tags: [Products]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Product'
+ *     responses:
+ *       201:
+ *         description: Produto criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Dados inválidos
+ */
+router.post('/products', productValidationRules(), ProductController.createProduct);
+
+/**
+ * @swagger
+ * /api/products/{id}:
+ *   put:
+ *     summary: Atualizar produto
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do produto
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Product'
+ *     responses:
+ *       200:
+ *         description: Produto atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Product'
+ *       404:
+ *         description: Produto não encontrado
+ */
+router.put('/products/:id', productUpdateValidationRules(), ProductController.updateProduct);
+
+/**
+ * @swagger
+ * /api/products/{id}:
+ *   delete:
+ *     summary: Deletar produto
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do produto
+ *     responses:
+ *       200:
+ *         description: Produto deletado com sucesso
+ *       404:
+ *         description: Produto não encontrado
+ */
+router.delete('/products/:id', ProductController.deleteProduct);
+
+// Category routes
+/**
+ * @swagger
+ * /api/categories:
+ *   get:
+ *     summary: Listar categorias
+ *     tags: [Categories]
+ *     responses:
+ *       200:
+ *         description: Lista de categorias
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Category'
+ */
+router.get('/categories', CategoryController.getAllCategories);
+
+/**
+ * @swagger
+ * /api/categories/{id}:
+ *   get:
+ *     summary: Buscar categoria por ID
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da categoria
+ *     responses:
+ *       200:
+ *         description: Categoria encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Category'
+ *       404:
+ *         description: Categoria não encontrada
+ */
+router.get('/categories/:id', CategoryController.getCategoryById);
+
+/**
+ * @swagger
+ * /api/categories:
+ *   post:
+ *     summary: Criar categoria
+ *     tags: [Categories]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Category'
+ *     responses:
+ *       201:
+ *         description: Categoria criada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Category'
+ *       400:
+ *         description: Dados inválidos
+ */
+router.post('/categories', categoryValidationRules(), CategoryController.createCategory);
+
+/**
+ * @swagger
+ * /api/categories/{id}:
+ *   put:
+ *     summary: Atualizar categoria
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da categoria
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Category'
+ *     responses:
+ *       200:
+ *         description: Categoria atualizada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Category'
+ *       404:
+ *         description: Categoria não encontrada
+ */
+router.put('/categories/:id', categoryUpdateValidationRules(), CategoryController.updateCategory);
+
+/**
+ * @swagger
+ * /api/categories/{id}:
+ *   delete:
+ *     summary: Deletar categoria
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da categoria
+ *     responses:
+ *       200:
+ *         description: Categoria deletada com sucesso
+ *       404:
+ *         description: Categoria não encontrada
+ */
+router.delete('/categories/:id', CategoryController.deleteCategory);
+
+// Customer routes
+/**
+ * @swagger
+ * /api/customers:
+ *   get:
+ *     summary: Listar clientes
+ *     tags: [Customers]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Itens por página
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Termo de busca
+ *     responses:
+ *       200:
+ *         description: Lista de clientes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Customer'
+ */
+router.get('/customers', CustomerController.getAllCustomers);
+
+/**
+ * @swagger
+ * /api/customers/{id}:
+ *   get:
+ *     summary: Buscar cliente por ID
+ *     tags: [Customers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do cliente
+ *     responses:
+ *       200:
+ *         description: Cliente encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Customer'
+ *       404:
+ *         description: Cliente não encontrado
+ */
+router.get('/customers/:id', CustomerController.getCustomerById);
+
+/**
+ * @swagger
+ * /api/customers:
+ *   post:
+ *     summary: Criar cliente
+ *     tags: [Customers]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Customer'
+ *     responses:
+ *       201:
+ *         description: Cliente criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Customer'
+ *       400:
+ *         description: Dados inválidos
+ */
+router.post('/customers', customerValidationRules(), CustomerController.createCustomer);
+
+/**
+ * @swagger
+ * /api/customers/{id}:
+ *   put:
+ *     summary: Atualizar cliente
+ *     tags: [Customers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do cliente
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Customer'
+ *     responses:
+ *       200:
+ *         description: Cliente atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Customer'
+ *       404:
+ *         description: Cliente não encontrado
+ */
+router.put('/customers/:id', customerUpdateValidationRules(), CustomerController.updateCustomer);
+
+/**
+ * @swagger
+ * /api/customers/{id}:
+ *   delete:
+ *     summary: Deletar cliente
+ *     tags: [Customers]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do cliente
+ *     responses:
+ *       200:
+ *         description: Cliente deletado com sucesso
+ *       404:
+ *         description: Cliente não encontrado
+ */
+router.delete('/customers/:id', CustomerController.deleteCustomer);
 
 /**
  * @swagger
@@ -234,15 +580,10 @@ router.post('/auth/logout', authenticateToken, AuthController.logout);
  *         address:
  *           type: string
  *           description: Endereço do cliente
- *         city:
+ *         birth_date:
  *           type: string
- *           description: Cidade
- *         state:
- *           type: string
- *           description: Estado
- *         zipCode:
- *           type: string
- *           description: CEP
+ *           format: date
+ *           description: Data de nascimento
  *         active:
  *           type: boolean
  *           description: Status ativo/inativo
@@ -254,10 +595,10 @@ router.post('/auth/logout', authenticateToken, AuthController.logout);
  *       properties:
  *         email:
  *           type: string
- *           description: Email do cliente
+ *           format: email
  *         password:
  *           type: string
- *           description: Senha do cliente
+ *           minLength: 6
  *     RegisterRequest:
  *       type: object
  *       required:
@@ -267,26 +608,40 @@ router.post('/auth/logout', authenticateToken, AuthController.logout);
  *       properties:
  *         name:
  *           type: string
- *           description: Nome do cliente
  *         email:
  *           type: string
- *           description: Email do cliente
+ *           format: email
  *         password:
  *           type: string
- *           description: Senha do cliente
+ *           minLength: 6
  *         phone:
  *           type: string
- *           description: Telefone do cliente
  *         cpf:
  *           type: string
- *           description: CPF do cliente
  *         address:
  *           type: string
- *           description: Endereço do cliente
  *         birth_date:
  *           type: string
  *           format: date
- *           description: Data de nascimento
+ *     ChangePasswordRequest:
+ *       type: object
+ *       required:
+ *         - oldPassword
+ *         - newPassword
+ *       properties:
+ *         oldPassword:
+ *           type: string
+ *         newPassword:
+ *           type: string
+ *           minLength: 6
+ *     ResetPasswordRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
  *     AuthResponse:
  *       type: object
  *       properties:
@@ -296,383 +651,8 @@ router.post('/auth/logout', authenticateToken, AuthController.logout);
  *           $ref: '#/components/schemas/Customer'
  *         token:
  *           type: string
- *           description: JWT token
  *         expiresIn:
  *           type: string
- *           description: Tempo de expiração do token
  */
 
-// Product routes
-/**
- * @swagger
- * /api/products:
- *   get:
- *     summary: Listar todos os produtos
- *     tags: [Products]
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *         description: Número da página
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *         description: Limite de itens por página
- *       - in: query
- *         name: categoryId
- *         schema:
- *           type: string
- *         description: Filtrar por categoria
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *         description: Buscar por nome, descrição ou código de barras
- *     responses:
- *       200:
- *         description: Lista de produtos
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 products:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Product'
- *                 pagination:
- *                   type: object
- */
-router.get('/products', ProductController.getAll);
-
-/**
- * @swagger
- * /api/products/{id}:
- *   get:
- *     summary: Obter produto por ID
- *     tags: [Products]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: ID do produto
- *     responses:
- *       200:
- *         description: Produto encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Product'
- *       404:
- *         description: Produto não encontrado
- */
-router.get('/products/:id', ProductController.getById);
-
-/**
- * @swagger
- * /api/products:
- *   post:
- *     summary: Criar novo produto
- *     tags: [Products]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Product'
- *     responses:
- *       201:
- *         description: Produto criado com sucesso
- *       400:
- *         description: Dados inválidos
- */
-router.post('/products', productValidationRules(), ProductController.create);
-
-/**
- * @swagger
- * /api/products/{id}:
- *   put:
- *     summary: Atualizar produto
- *     tags: [Products]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Product'
- *     responses:
- *       200:
- *         description: Produto atualizado
- *       404:
- *         description: Produto não encontrado
- */
-router.put('/products/:id', productUpdateValidationRules(), ProductController.update);
-
-/**
- * @swagger
- * /api/products/{id}:
- *   delete:
- *     summary: Excluir produto
- *     tags: [Products]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       204:
- *         description: Produto excluído
- *       404:
- *         description: Produto não encontrado
- */
-router.delete('/products/:id', ProductController.delete);
-
-/**
- * @swagger
- * /api/products/barcode/{barcode}:
- *   get:
- *     summary: Buscar produto por código de barras
- *     tags: [Products]
- *     parameters:
- *       - in: path
- *         name: barcode
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Produto encontrado
- *       404:
- *         description: Produto não encontrado
- */
-router.get('/products/barcode/:barcode', ProductController.getByBarcode);
-
-// Category routes
-/**
- * @swagger
- * /api/categories:
- *   get:
- *     summary: Listar todas as categorias
- *     tags: [Categories]
- *     responses:
- *       200:
- *         description: Lista de categorias
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Category'
- */
-router.get('/categories', CategoryController.getAll);
-
-/**
- * @swagger
- * /api/categories/{id}:
- *   get:
- *     summary: Obter categoria por ID
- *     tags: [Categories]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Categoria encontrada
- *       404:
- *         description: Categoria não encontrada
- */
-router.get('/categories/:id', CategoryController.getById);
-
-/**
- * @swagger
- * /api/categories:
- *   post:
- *     summary: Criar nova categoria
- *     tags: [Categories]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Category'
- *     responses:
- *       201:
- *         description: Categoria criada
- *       400:
- *         description: Dados inválidos
- */
-router.post('/categories', categoryValidationRules(), CategoryController.create);
-
-/**
- * @swagger
- * /api/categories/{id}:
- *   put:
- *     summary: Atualizar categoria
- *     tags: [Categories]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Category'
- *     responses:
- *       200:
- *         description: Categoria atualizada
- *       404:
- *         description: Categoria não encontrada
- */
-router.put('/categories/:id', categoryUpdateValidationRules(), CategoryController.update);
-
-/**
- * @swagger
- * /api/categories/{id}:
- *   delete:
- *     summary: Excluir categoria
- *     tags: [Categories]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       204:
- *         description: Categoria excluída
- *       404:
- *         description: Categoria não encontrada
- */
-router.delete('/categories/:id', CategoryController.delete);
-
-// Customer routes
-/**
- * @swagger
- * /api/customers:
- *   get:
- *     summary: Listar todos os clientes
- *     tags: [Customers]
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Lista de clientes
- */
-router.get('/customers', CustomerController.getAll);
-
-/**
- * @swagger
- * /api/customers/{id}:
- *   get:
- *     summary: Obter cliente por ID
- *     tags: [Customers]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Cliente encontrado
- *       404:
- *         description: Cliente não encontrado
- */
-router.get('/customers/:id', CustomerController.getById);
-
-/**
- * @swagger
- * /api/customers:
- *   post:
- *     summary: Criar novo cliente
- *     tags: [Customers]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Customer'
- *     responses:
- *       201:
- *         description: Cliente criado
- *       400:
- *         description: Dados inválidos
- */
-router.post('/customers', customerValidationRules(), CustomerController.create);
-
-/**
- * @swagger
- * /api/customers/{id}:
- *   put:
- *     summary: Atualizar cliente
- *     tags: [Customers]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Customer'
- *     responses:
- *       200:
- *         description: Cliente atualizado
- *       404:
- *         description: Cliente não encontrado
- */
-router.put('/customers/:id', customerUpdateValidationRules(), CustomerController.update);
-
-/**
- * @swagger
- * /api/customers/{id}:
- *   delete:
- *     summary: Excluir cliente
- *     tags: [Customers]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       204:
- *         description: Cliente excluído
- *       404:
- *         description: Cliente não encontrado
- */
-router.delete('/customers/:id', CustomerController.delete);
-
-module.exports = router;
+export default router;

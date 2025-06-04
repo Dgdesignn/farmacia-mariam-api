@@ -1,6 +1,5 @@
-import AuthService from '../services/authService.js';
-import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
+import AuthService from '../services/authService.js';
 
 class AuthController {
   static async login(req, res) {

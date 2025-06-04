@@ -1,6 +1,6 @@
 
 import AuthModel from '../models/authModel.js';
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
 class AuthService {
   static generateToken(customer) {

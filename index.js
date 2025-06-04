@@ -1,12 +1,16 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const routes = require('./src/routes/routes');
-const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
-const winston = require('winston');
-require('dotenv').config();
+
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import session from 'express-session';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
+import winston from 'winston';
+import dotenv from 'dotenv';
+import routes from './src/routes/routes.js';
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -75,7 +79,7 @@ const swaggerOptions = {
   apis: ['./src/routes/*.js'],
 };
 
-const specs = swaggerJSDoc(swaggerOptions);
+const specs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Routes

@@ -1,10 +1,9 @@
 
-import jwt from 'jsonwebtoken';
-const AuthService = require('../services/authService');
+import AuthService from '../services/authService.js';
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
     return res.status(401).json({ error: 'Token de acesso requerido' });
@@ -28,15 +27,14 @@ const optionalAuth = (req, res, next) => {
       const decoded = AuthService.verifyToken(token);
       req.user = decoded;
     } catch (error) {
-      // Token inválido, mas continua sem autenticação
+      // Token inválido, mas continue sem autenticação
       req.user = null;
     }
+  } else {
+    req.user = null;
   }
-
+  
   next();
 };
 
-export {
-  authenticateToken,
-  optionalAuth
-};
+export { authenticateToken, optionalAuth };

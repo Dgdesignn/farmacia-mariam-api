@@ -1,7 +1,6 @@
 
 import { supabase } from '../config/config.js';
 import bcrypt from 'bcrypt';
-const bcrypt = require('bcrypt');
 
 class AuthModel {
   static async login(email, password) {
