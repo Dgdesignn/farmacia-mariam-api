@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const routes = require('./src/routes/routes');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
+const winston = require('winston');
 require('dotenv').config();
 
 const app = express();
