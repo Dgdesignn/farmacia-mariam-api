@@ -1,10 +1,9 @@
-
 import { supabase } from '../config/config.js';
 
 class CustomerModel {
   static async findAll(page = 1, limit = 10, search = null) {
     const offset = (page - 1) * limit;
-    
+
     let query = supabase
       .from('customers')
       .select('id, name, email, phone, cpf, address, birth_date, active, created_at, updated_at')

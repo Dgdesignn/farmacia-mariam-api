@@ -1,8 +1,9 @@
+
 import CategoryService from '../services/categoryService.js';
 import { validationResult } from 'express-validator';
 
 class CategoryController {
-  static async getAll(req, res) {
+  static async getAllCategories(req, res) {
     try {
       const categories = await CategoryService.getAllCategories();
       res.json(categories);
@@ -11,7 +12,7 @@ class CategoryController {
     }
   }
 
-  static async getById(req, res) {
+  static async getCategoryById(req, res) {
     try {
       const { id } = req.params;
       const category = await CategoryService.getCategoryById(id);
@@ -21,7 +22,7 @@ class CategoryController {
     }
   }
 
-  static async create(req, res) {
+  static async createCategory(req, res) {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -35,7 +36,7 @@ class CategoryController {
     }
   }
 
-  static async update(req, res) {
+  static async updateCategory(req, res) {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -50,11 +51,11 @@ class CategoryController {
     }
   }
 
-  static async delete(req, res) {
+  static async deleteCategory(req, res) {
     try {
       const { id } = req.params;
-      await CategoryService.deleteCategory(id);
-      res.status(204).send();
+      const result = await CategoryService.deleteCategory(id);
+      res.json(result);
     } catch (error) {
       res.status(400).json({ error: error.message });
     }

@@ -6,32 +6,51 @@ const productValidationRules = () => {
     body('name')
       .notEmpty()
       .withMessage('Nome é obrigatório')
-      .isLength({ min: 2, max: 100 })
-      .withMessage('Nome deve ter entre 2 e 100 caracteres'),
+      .isLength({ min: 2, max: 200 })
+      .withMessage('Nome deve ter entre 2 e 200 caracteres'),
     
     body('description')
       .optional()
-      .isLength({ max: 500 })
-      .withMessage('Descrição deve ter no máximo 500 caracteres'),
+      .isLength({ max: 1000 })
+      .withMessage('Descrição deve ter no máximo 1000 caracteres'),
     
     body('price')
-      .isNumeric()
-      .withMessage('Preço deve ser um número')
-      .isFloat({ min: 0.01 })
-      .withMessage('Preço deve ser maior que 0'),
+      .notEmpty()
+      .withMessage('Preço é obrigatório')
+      .isFloat({ min: 0 })
+      .withMessage('Preço deve ser um número positivo'),
     
-    body('stock')
+    body('stock_quantity')
+      .notEmpty()
+      .withMessage('Quantidade em estoque é obrigatória')
       .isInt({ min: 0 })
-      .withMessage('Estoque deve ser um número inteiro não negativo'),
+      .withMessage('Quantidade em estoque deve ser um número inteiro positivo'),
     
     body('categoryId')
       .notEmpty()
-      .withMessage('Categoria é obrigatória'),
+      .withMessage('Categoria é obrigatória')
+      .isUUID()
+      .withMessage('ID da categoria deve ser um UUID válido'),
     
     body('barcode')
       .optional()
       .isLength({ min: 8, max: 20 })
-      .withMessage('Código de barras deve ter entre 8 e 20 caracteres')
+      .withMessage('Código de barras deve ter entre 8 e 20 caracteres'),
+    
+    body('manufacturer')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('Fabricante deve ter no máximo 100 caracteres'),
+    
+    body('expiry_date')
+      .optional()
+      .isISO8601()
+      .withMessage('Data de validade deve ter formato válido (YYYY-MM-DD)'),
+    
+    body('prescription_required')
+      .optional()
+      .isBoolean()
+      .withMessage('Prescrição necessária deve ser verdadeiro ou falso')
   ];
 };
 
@@ -39,35 +58,48 @@ const productUpdateValidationRules = () => {
   return [
     body('name')
       .optional()
-      .isLength({ min: 2, max: 100 })
-      .withMessage('Nome deve ter entre 2 e 100 caracteres'),
+      .isLength({ min: 2, max: 200 })
+      .withMessage('Nome deve ter entre 2 e 200 caracteres'),
     
     body('description')
       .optional()
-      .isLength({ max: 500 })
-      .withMessage('Descrição deve ter no máximo 500 caracteres'),
+      .isLength({ max: 1000 })
+      .withMessage('Descrição deve ter no máximo 1000 caracteres'),
     
     body('price')
       .optional()
-      .isNumeric()
-      .withMessage('Preço deve ser um número')
-      .isFloat({ min: 0.01 })
-      .withMessage('Preço deve ser maior que 0'),
+      .isFloat({ min: 0 })
+      .withMessage('Preço deve ser um número positivo'),
     
-    body('stock')
+    body('stock_quantity')
       .optional()
       .isInt({ min: 0 })
-      .withMessage('Estoque deve ser um número inteiro não negativo'),
+      .withMessage('Quantidade em estoque deve ser um número inteiro positivo'),
     
     body('categoryId')
       .optional()
-      .notEmpty()
-      .withMessage('Categoria não pode estar vazia'),
+      .isUUID()
+      .withMessage('ID da categoria deve ser um UUID válido'),
     
     body('barcode')
       .optional()
       .isLength({ min: 8, max: 20 })
-      .withMessage('Código de barras deve ter entre 8 e 20 caracteres')
+      .withMessage('Código de barras deve ter entre 8 e 20 caracteres'),
+    
+    body('manufacturer')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('Fabricante deve ter no máximo 100 caracteres'),
+    
+    body('expiry_date')
+      .optional()
+      .isISO8601()
+      .withMessage('Data de validade deve ter formato válido (YYYY-MM-DD)'),
+    
+    body('prescription_required')
+      .optional()
+      .isBoolean()
+      .withMessage('Prescrição necessária deve ser verdadeiro ou falso')
   ];
 };
 

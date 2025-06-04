@@ -93,4 +93,5 @@ const customerUpdateValidationRules = () => {
 export {
   customerValidationRules,
   customerUpdateValidationRules
+};lidationRules
 };

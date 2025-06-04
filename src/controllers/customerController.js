@@ -1,12 +1,13 @@
+
 import CustomerService from '../services/customerService.js';
 import { validationResult } from 'express-validator';
 
 class CustomerController {
-  static async getAll(req, res) {
+  static async getAllCustomers(req, res) {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
-      const search = req.query.search;
+      const search = req.query.search || null;
 
       const result = await CustomerService.getAllCustomers(page, limit, search);
       res.json(result);
@@ -15,7 +16,7 @@ class CustomerController {
     }
   }
 
-  static async getById(req, res) {
+  static async getCustomerById(req, res) {
     try {
       const { id } = req.params;
       const customer = await CustomerService.getCustomerById(id);
@@ -25,7 +26,7 @@ class CustomerController {
     }
   }
 
-  static async create(req, res) {
+  static async createCustomer(req, res) {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -39,7 +40,7 @@ class CustomerController {
     }
   }
 
-  static async update(req, res) {
+  static async updateCustomer(req, res) {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -54,13 +55,13 @@ class CustomerController {
     }
   }
 
-  static async delete(req, res) {
+  static async deleteCustomer(req, res) {
     try {
       const { id } = req.params;
-      await CustomerService.deleteCustomer(id);
-      res.status(204).send();
+      const result = await CustomerService.deleteCustomer(id);
+      res.json(result);
     } catch (error) {
-      res.status(404).json({ error: error.message });
+      res.status(400).json({ error: error.message });
     }
   }
 }

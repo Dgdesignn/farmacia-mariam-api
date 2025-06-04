@@ -30,7 +30,7 @@ class CategoryService {
       throw new Error('Categoria não encontrada');
     }
 
-    // Verificar se o nome já existe (exceto para a categoria atual)
+    // Verificar nome se fornecido
     if (data.name && data.name !== category.name) {
       const existingCategory = await CategoryModel.findByName(data.name);
       if (existingCategory) {
@@ -45,11 +45,6 @@ class CategoryService {
     const category = await CategoryModel.findById(id);
     if (!category || !category.active) {
       throw new Error('Categoria não encontrada');
-    }
-
-    // Verificar se existem produtos ativos nesta categoria
-    if (category._count.products > 0) {
-      throw new Error('Não é possível excluir categoria com produtos ativos');
     }
 
     return await CategoryModel.delete(id);
