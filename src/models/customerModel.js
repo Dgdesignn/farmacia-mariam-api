@@ -140,4 +140,4 @@ class CustomerModel {
   }
 }
 
-export default CustomerModel;l;
+export default CustomerModel;
