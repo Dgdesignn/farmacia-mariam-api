@@ -1,6 +1,6 @@
-
-const { validationResult } = require('express-validator');
-const AuthService = require('../services/authService');
+import AuthService from '../services/authService.js';
+import jwt from 'jsonwebtoken';
+import { validationResult } from 'express-validator';
 
 class AuthController {
   static async login(req, res) {
@@ -12,7 +12,7 @@ class AuthController {
 
       const { email, password } = req.body;
       const result = await AuthService.login(email, password);
-      
+
       res.json({
         message: 'Login realizado com sucesso',
         ...result
@@ -30,7 +30,7 @@ class AuthController {
       }
 
       const result = await AuthService.register(req.body);
-      
+
       res.status(201).json({
         message: 'Cadastro realizado com sucesso',
         ...result
@@ -51,7 +51,7 @@ class AuthController {
       const customerId = req.user.id; // Vem do middleware de autenticação
 
       const result = await AuthService.changePassword(customerId, oldPassword, newPassword);
-      
+
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -67,7 +67,7 @@ class AuthController {
 
       const { email } = req.body;
       const result = await AuthService.resetPassword(email);
-      
+
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -95,4 +95,4 @@ class AuthController {
   }
 }
 
-module.exports = AuthController;
+export default AuthController;

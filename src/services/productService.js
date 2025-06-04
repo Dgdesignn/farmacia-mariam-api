@@ -1,5 +1,5 @@
 
-const ProductModel = require('../models/productModel');
+import ProductModel from '../models/productModel.js';
 const CategoryModel = require('../models/categoryModel');
 
 class ProductService {
@@ -76,4 +76,4 @@ class ProductService {
   }
 }
 
-module.exports = ProductService;
+export default ProductService;

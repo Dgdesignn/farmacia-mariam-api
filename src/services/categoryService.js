@@ -1,5 +1,5 @@
 
-const CategoryModel = require('../models/categoryModel');
+import CategoryModel from '../models/categoryModel.js';
 
 class CategoryService {
   static async getAllCategories() {
@@ -56,4 +56,4 @@ class CategoryService {
   }
 }
 
-module.exports = CategoryService;
+export default CategoryService;

@@ -1,5 +1,5 @@
 
-const { body } = require('express-validator');
+import { body } from 'express-validator';
 
 const categoryValidationRules = () => {
   return [
@@ -30,7 +30,7 @@ const categoryUpdateValidationRules = () => {
   ];
 };
 
-module.exports = {
+export {
   categoryValidationRules,
   categoryUpdateValidationRules
 };

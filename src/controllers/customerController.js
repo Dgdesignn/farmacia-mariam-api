@@ -1,6 +1,5 @@
-
-const { validationResult } = require('express-validator');
-const CustomerService = require('../services/customerService');
+import CustomerService from '../services/customerService.js';
+import { validationResult } from 'express-validator';
 
 class CustomerController {
   static async getAll(req, res) {
@@ -66,4 +65,4 @@ class CustomerController {
   }
 }
 
-module.exports = CustomerController;
+export default CustomerController;

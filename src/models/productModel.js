@@ -1,5 +1,5 @@
 
-const { supabase } = require('../config/config');
+import { supabase } from '../config/config.js';
 
 class ProductModel {
   static async findAll(page = 1, limit = 10, categoryId = null, search = null) {
@@ -179,4 +179,4 @@ class ProductModel {
   }
 }
 
-module.exports = ProductModel;
+export default ProductModel;

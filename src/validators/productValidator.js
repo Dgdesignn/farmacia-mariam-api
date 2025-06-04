@@ -1,5 +1,5 @@
 
-const { body } = require('express-validator');
+import { body } from 'express-validator';
 
 const productValidationRules = () => {
   return [
@@ -71,7 +71,7 @@ const productUpdateValidationRules = () => {
   ];
 };
 
-module.exports = {
+export {
   productValidationRules,
   productUpdateValidationRules
 };

@@ -1,5 +1,5 @@
 
-const AuthModel = require('../models/authModel');
+import AuthModel from '../models/authModel.js';
 const jwt = require('jsonwebtoken');
 
 class AuthService {
@@ -56,4 +56,4 @@ class AuthService {
   }
 }
 
-module.exports = AuthService;
+export default AuthService;

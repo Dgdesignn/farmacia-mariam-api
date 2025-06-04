@@ -1,5 +1,6 @@
 
-const { supabase } = require('../config/config');
+import { supabase } from '../config/config.js';
+import bcrypt from 'bcrypt';
 const bcrypt = require('bcrypt');
 
 class AuthModel {
@@ -157,4 +158,4 @@ class AuthModel {
   }
 }
 
-module.exports = AuthModel;
+export default AuthModel;

@@ -1,5 +1,5 @@
 
-const CustomerModel = require('../models/customerModel');
+import CustomerModel from '../models/customerModel.js';
 
 class CustomerService {
   static async getAllCustomers(page, limit, search) {
@@ -69,4 +69,4 @@ class CustomerService {
   }
 }
 
-module.exports = CustomerService;
+export default CustomerService;
